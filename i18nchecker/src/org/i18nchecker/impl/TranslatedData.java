@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import org.supercsv.io.CsvListReader;
 import org.supercsv.prefs.CsvPreference;
 
@@ -49,7 +48,7 @@ public class TranslatedData {
     private Map<String, Map<String, Map<String, String>>> data;
 
     public TranslatedData(File sourceFile) throws IOException {
-        I18NUtils.LOG.log(Level.INFO, "Parsing translation: {0}", sourceFile);
+        System.out.println("Parsing translation: " + sourceFile);
         FileInputStream fis = new FileInputStream(sourceFile);
         InputStreamReader in = new InputStreamReader(fis, "UTF-8"); // NOI18N
         CsvListReader reader = new CsvListReader(in, CsvPreference.EXCEL_PREFERENCE);

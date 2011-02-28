@@ -25,7 +25,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 
 /**
  * Utilities for the package
@@ -33,8 +36,6 @@ import java.util.logging.Logger;
  * @author Max
  */
 public class I18NUtils {
-
-    public static final Logger LOG = Logger.getLogger(I18NUtils.class.getName());
 
     /** Returns hex String representation of byte b */
     private static String byteToHex(byte b) {

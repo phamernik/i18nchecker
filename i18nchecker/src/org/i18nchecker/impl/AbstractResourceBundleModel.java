@@ -21,9 +21,9 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.MessageFormat;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.logging.Level;
 
 /**
  * Superclass for classes representing one resource bundle (primary or translated).
@@ -85,8 +85,10 @@ abstract class AbstractResourceBundleModel<T extends AbstractRBInfo> {
                 if (line.length() > 0) {
                     int indexOfEqual = line.indexOf("=");
                     if (indexOfEqual <= 0) {
-                        I18NUtils.LOG.log(Level.INFO, "{0}:{1}: WARNING: incorrect key: {2}",
-                                new Object[]{ fileName, lineCount, line });
+                        String msg = MessageFormat.format(
+                                "{0}:{1}: WARNING: incorrect key: {2}",
+                                new Object[] { fileName, lineCount, line } );
+                        System.out.println(msg);
                     } else {
                         String key = line.substring(0, indexOfEqual);
                         String value = line.substring(indexOfEqual + 1);

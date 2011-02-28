@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Represents one translated resource bundle (e.g Bundle_ja.properties)
@@ -64,7 +63,7 @@ class TranslatedResourceBundleModel extends AbstractResourceBundleModel<Translat
      */
     void generateTranslatedResource(List<String> header, Map<String, String> translatedPackage) throws IOException {
         List<String> strings2Export = new LinkedList<String>();
-        I18NUtils.LOG.log(Level.INFO, "Generating resource bundle: {0}", getFileName());
+        System.out.println("Generating resource bundle: " + getFileName());
         for (String str: header) {
             strings2Export.add(str);
         }

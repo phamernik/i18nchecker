@@ -29,7 +29,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 
@@ -100,7 +99,7 @@ public class I18nChecker extends Task {
 
     @Override
     public void execute() throws BuildException {
-        I18NUtils.LOG.log(Level.INFO, "Scanning modules...\n");
+        System.out.println("Scanning modules...\n");
         try {
             if (language == null) {
                 printErrors(rootDir, topDirsToScan, moduleFilter);
@@ -130,9 +129,9 @@ public class I18nChecker extends Task {
                 summary.append(moduleScanner.getModuleSimpleName()).append("=").append(moduleScanner.getProblemsCount()).append("\n");
             }
         }
-        I18NUtils.LOG.log(Level.INFO, "\n\nSummary:\n");
-        I18NUtils.LOG.log(Level.INFO, summary.toString());
-        I18NUtils.LOG.log(Level.INFO, "total={0}", total);
+        System.out.println("\n\nSummary:\n");
+        System.out.println(summary.toString());
+        System.out.println("total=" + total);
     }
 
     /** Mode 2 - prepare CSV for translation */
@@ -145,7 +144,7 @@ public class I18nChecker extends Task {
             moduleScanner.printResults(false);
             moduleScanner.bundle2csv(language, exportedStrings);
         }
-        I18NUtils.LOG.log(Level.INFO, "\nExporting to: {0}", exportToFile);
+        System.out.println("\nExporting to: " + exportToFile);
         I18NUtils.storeToFile(exportToFile, exportedStrings);
     }
 

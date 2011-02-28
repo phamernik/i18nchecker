@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Collects results per module.
@@ -107,17 +106,18 @@ class ScanResults {
 
     /** Print all results to System.out */
     public void printAll(boolean details) {
-        I18NUtils.LOG.log(Level.INFO, "\nModule: {0}", name);
-        I18NUtils.LOG.log(Level.INFO, 
+        System.out.println();
+        System.out.println("Module: " + name);
+        System.out.println(
                 SUMMARY.format(new Object[] { sourceCount, bundleCount,
                 translatedBundleCount, getProblemsCount() }));
         if (details) {
             for (Type type: Type.values()) {
                 List<String> list = results.get(type);
                 if (list != null) {
-                    I18NUtils.LOG.log(Level.INFO, type.getDescription());
+                    System.out.println(type.getDescription());
                     for (String val: list) {
-                        I18NUtils.LOG.log(Level.INFO, val);
+                        System.out.println(val);
                     }
                 }
             }
