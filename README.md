@@ -7,9 +7,11 @@ It can be used for verifying strings in Java sources and resource bundles.
 Also serves for exporting all strings for translation and importing them back to resource bundles.
 Current implementation works with well-known structure of directories (as we have developed
 it for our own repository which is organized this way). 
+
 The tool startup parameter is "top level dirs" list. Each top level directory
 should contain modules and each module is recognized using "src" subdirectory.
 In this example the top level directories are "modules_group1,module_group2":
+<pre>
 +---modules_group1
 |   +---module1
 |   |   +---src
@@ -25,6 +27,7 @@ In this example the top level directories are "modules_group1,module_group2":
 |       \---src
 |           \---com...
 ...
+</pre>
 
 Usages
 ------
