@@ -10,6 +10,27 @@
 <project name="i18nchecker" default="default" basedir=".">
     <description>Builds, tests, and runs the project i18nchecker.</description>
     <import file="nbproject/build-impl.xml"/>
+    
+    <target name="i18n-consistency-check"  description="Verification of localized strings in source code" depends="jar">
+        <property file="nbproject/private/private.properties"/>
+        <property name="i18n.modulefilter" value=""/>
+        <echo>I18N Consistency Check - use modulefilter property if you want to see errors only from one module</echo>
+        <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" modulefilter="${i18n.modulefilter}"/>
+    </target>
+
+    <!-- TODO: improve following tasks - reuse taskdef etc. -->
+    <target name="i18n-prepare-japanese" description="Prepare CSV file for translation to Japanese">
+        <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
+        <mkdir dir="build/i18n"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" language="ja" exportto="build/i18n/japanese.csv"/>
+    </target>
+
+    <target name="i18n-apply-japanese" description="Apply Japanese translation to projects resource bundles">
+        <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" language="ja" importfrom="translations/japanese.csv"/>
+    </target>
+    
     <!--
 
     There exist several targets which are by default empty and which can be 
