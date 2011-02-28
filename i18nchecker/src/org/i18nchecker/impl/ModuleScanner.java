@@ -153,7 +153,7 @@ public class ModuleScanner {
         return ret;
     }
 
-    /** Compute from e.g. "C:\Projects\IJC\Work\trunk\repo\modules\WorkBenchProject" => "modules/WorkBenchProject" string.
+    /** Compute from e.g. "C:\Projects\MyProject\Work\trunk\repo\modules\WorkBenchProject" => "modules/WorkBenchProject" string.
      */
     public String getModuleSimpleName() throws IOException {
         return simpleName;

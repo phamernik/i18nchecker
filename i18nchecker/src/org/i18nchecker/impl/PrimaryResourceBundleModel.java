@@ -25,7 +25,7 @@ import java.util.Map;
  * @author Petr Hamernik
  */
 class PrimaryResourceBundleModel extends AbstractResourceBundleModel<PrimaryRBInfo> {
-    /** These keys are mandatory. All IJC modules should have them */
+    /** These keys are mandatory. All modules should have them */
     private static final String[] MODULE_BUNDLE_MANDATORY_KEYS = { "OpenIDE-Module-Display-Category", "OpenIDE-Module-Name" };
     /** These keys are optional, so it's not reported as warning if they are not present */
     private static final String[] MODULE_BUNDLE_OPTIONAL_KEYS = { "OpenIDE-Module-Long-Description", "OpenIDE-Module-Short-Description" };
