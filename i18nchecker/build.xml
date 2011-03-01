@@ -16,19 +16,19 @@
         <property name="i18n.modulefilter" value=""/>
         <echo>I18N Consistency Check - use modulefilter property if you want to see errors only from one module</echo>
         <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
-        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" modulefilter="${i18n.modulefilter}"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground,i18nchecker/playground/PaintApp" modulefilter="${i18n.modulefilter}"/>
     </target>
 
     <!-- TODO: improve following tasks - reuse taskdef etc. -->
     <target name="i18n-prepare-japanese" description="Prepare CSV file for translation to Japanese">
         <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
         <mkdir dir="build/i18n"/>
-        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" language="ja" exportto="build/i18n/japanese.csv"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground,i18nchecker/playground/PaintApp" language="ja" exportto="build/i18n/japanese.csv"/>
     </target>
 
     <target name="i18n-apply-japanese" description="Apply Japanese translation to projects resource bundles">
         <taskdef classname="org.i18nchecker.I18nChecker" name="i18nConsistencyCheck" classpath="lib/anttasks.jar:lib/antlr-runtime-3.2.jar:dist/i18nchecker.jar"/>
-        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground" language="ja" importfrom="translations/japanese.csv"/>
+        <i18nConsistencyCheck srcdir=".." topdirs="i18nchecker/playground,i18nchecker/playground/PaintApp" language="ja" importfrom="translations/japanese.csv"/>
     </target>
     
     <!--
