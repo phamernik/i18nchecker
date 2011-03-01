@@ -90,7 +90,7 @@ abstract class AbstractResourceBundleModel<T extends AbstractRBInfo> {
                                 new Object[] { fileName, lineCount, line } );
                         System.out.println(msg);
                     } else {
-                        String key = line.substring(0, indexOfEqual);
+                        String key = line.substring(0, indexOfEqual).trim();
                         String value = line.substring(indexOfEqual + 1);
                         lastInfo = createInfo(value, lineCount, yesI18N);
                         keys.put(key, lastInfo);
