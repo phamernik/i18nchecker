@@ -58,6 +58,6 @@ and run the test again. It should fail.
 
 Links
 -----
-See also [Geertjan's blog post] about this tool. You can find more details there.
+See also [Geertjan's blog post][1] about this tool. You can find more details there.
 
 [1]: http://blogs.sun.com/geertjan/entry/i18nchecker
