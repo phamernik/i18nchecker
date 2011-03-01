@@ -46,7 +46,7 @@ public class I18NTest extends TestCase {
         Method runAsTestMethod = c.getMethod("runAsTest", File.class, String.class, Map.class);
 
         Map<String,Integer> unfinishedModules = getUnfinishedI18NModules();
-        String result = (String) runAsTestMethod.invoke(null, rootDir, "i18nchecker/playground", unfinishedModules);
+        String result = (String) runAsTestMethod.invoke(null, rootDir, "i18nchecker/playground,i18nchecker/playground/PaintApp", unfinishedModules);
         if (!result.isEmpty()) {
             fail(result);
         }
