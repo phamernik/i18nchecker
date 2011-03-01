@@ -55,3 +55,8 @@ Run i18n-consistency-check target from build.xml.
 Also see this project's unit test - it shows how I18N Checker can run as unit test (to prevent i18n regressions).
 Test should pass as some i18n errors are expected. Try to add one more i18n error to sources in playground
 and run the test again. It should fail.
+
+Links
+-----
+See also Geertjan's blog post about this tool. You can find more details there:
+http://blogs.sun.com/geertjan/entry/i18nchecker
