@@ -60,25 +60,24 @@ General rules for writing correct code
 --------------------------------------
 ("Correct" in this context means compatible with this tool.)
 
-These strings are ignored by I18N tools in Java sources (it means you don’t need to write NOI18N comment there):
+These strings are ignored by I18N tools in Java sources (it means you don't need to write NOI18N comment there):
 
 * strings where str.trim().length() <= 1
-* strings which are in the same line as Java annotations - e.g. @SomeAnnotation(“this is ignored”)
-* strings which are in the same line as “assert” keyword
+* strings which are in the same line as Java annotations - e.g. @SomeAnnotation("this is ignored")
+* strings which are in the same line as "assert" keyword
 * strings in comments of course
 
 All other strings must be commented with NOI18N including (but not only these):
 
 * logger messages
-* exception messages (it depends! Think a little about each message. If it’s supposed to be printed only to log file then do NOT translate it. If you think the exception message can be shown to user in error dialog, then translate)
+* exception messages (it depends! Think a little about each message. If it's supposed to be printed only to log file then do NOT translate it. If you think the exception message can be shown to user in error dialog, then translate)
 * all other strings which are intentionally left in English only
 
 Other rules:
 
 * Do NOT use NOI18N for strings which actually are translated and are in Bundle.properties.
 * Do not use cross-package resource bundles. All strings in sources must be localized only in Bundle.properties in the same package.
-* Tool will report error when string is in Bundle.properties, but is not present in any Java source in this package. In the case that you are sure string is used (key is composite - for example NbBundle.getMessage(..., “LABEL_” + someKey)) then mark these string with #YESI18N above the string in Bundle.properties
-
+* Tool will report error when string is in Bundle.properties, but is not present in any Java source in this package. In the case that you are sure string is used (key is composite - for example NbBundle.getMessage(..., "LABEL_" + someKey)) then mark these string with #YESI18N above the string in Bundle.properties
 
 Note: we can change these rules in the future. Feel free to propose changes (e.g. what else to ignore in Java sources, etc.)
 
