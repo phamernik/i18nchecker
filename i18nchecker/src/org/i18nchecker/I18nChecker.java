@@ -151,7 +151,7 @@ public class I18nChecker extends Task {
     /** Mode 3 - use translation from CSV and apply it into appropriate resource bundle files */
     private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter) throws IOException {
         TranslatedData translatedData = new TranslatedData(importFromFile);
-        List<String> header = I18NUtils.createTranslationFilesHeader(I18nChecker.class.getName(), importFromFile);
+        List<String> header = I18NUtils.createTranslationFilesHeader(I18nChecker.class.getName(), rootDir, importFromFile);
         List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan();
