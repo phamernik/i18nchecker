@@ -36,6 +36,7 @@ class ScanResults {
         MISSING_NOI18N_OR_KEY_IN_BUNDLE("Probably missing key in resource bundle or string should be marked with // NOI18N"),
         MAYBE_UNUSED_KEY_IN_BUNDLE("Probably unused resource bundle"),
         MODULE_MANIFEST_BUNDLE("Module's resource bundle specified in manifest.mf"),
+        MODULE_LAYER_DEFINITION("Module's XML layer definition is missing in resource bundle"),
         NOT_NECESSARY_TO_USE_NOI18N("It is redundant to use NOI18N when String actually is in resource bundle");
 
         private String description;

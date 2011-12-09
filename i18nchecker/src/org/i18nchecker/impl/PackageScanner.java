@@ -67,7 +67,7 @@ class PackageScanner {
             case TRANSLATED_BUNDLE:
                 translatedBundles.add(new TranslatedResourceBundleModel(packageDir + File.separator + name));
                 break;
-            case JAVA: 
+            case JAVA:
                 sources.put(name, new JavaSourceModel(packageDir + File.separator + name));
                 break;
         }
@@ -105,6 +105,15 @@ class PackageScanner {
         primaryBundle.verifyNBModuleBundle(results);
     }
 
+    /**
+     * Checks if the primary bundle contains given key and marks it as used.
+     *
+     * @param layerFileName name of layer XML file
+     */
+    public boolean markAsUsed(String key) {
+        return primaryBundle.markAsUsed(key);
+    }
+
     /** Report results of verification */
     public void reportResults(ScanResults results) {
         for (JavaSourceModel source: sources.values()) {
@@ -131,7 +140,7 @@ class PackageScanner {
             translationRB = new TranslatedResourceBundleModel(packageDir + File.separator + "Bundle_" + language + ".properties");
         }
         translationRB.generateTranslatedResource(header, translatedPackage);
-        
+
     }
 
     private TranslatedResourceBundleModel findLanguage(String language) {

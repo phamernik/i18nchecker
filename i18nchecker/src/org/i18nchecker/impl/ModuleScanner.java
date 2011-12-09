@@ -18,12 +18,14 @@ package org.i18nchecker.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.tools.ant.DirectoryScanner;
+import org.i18nchecker.impl.LayerParser.LayerData;
 
 /**
  * Scanner for a single module strings.
@@ -34,6 +36,7 @@ public class ModuleScanner {
     public static final String SRC_DIR = "src";
     public static final String MANIFEST_FILE = "manifest.mf";
     private static final String MANIFEST_BUNDLE_LINK ="OpenIDE-Module-Localizing-Bundle: ";
+    private static final String MANIFEST_LAYER_LINK ="OpenIDE-Module-Layer: ";
 
     private File rootDir;
     private Map<String, PackageScanner> packages;
@@ -58,6 +61,7 @@ public class ModuleScanner {
             ps.verify();
         }
         verifyManifest();
+        verifyLayer();
 
         for (PackageScanner ps: packages.values()) {
             ps.reportResults(results);
@@ -78,6 +82,42 @@ public class ModuleScanner {
             }
         }
         results.add(ScanResults.Type.MODULE_MANIFEST_BUNDLE, rootDir.getAbsolutePath() + File.separator + MANIFEST_FILE, 1, "Missing resource bundle specified in module manifest");
+    }
+
+    /** Check the module layer if there is one. */
+    private void verifyLayer() throws IOException {
+        String moduleLayerFile = findModuleLayer();
+        if (moduleLayerFile == null) {
+            return;
+        }
+        final File layerFile = new File(rootDir, SRC_DIR + File.separator + moduleLayerFile);
+        if (!layerFile.exists()) {
+            results.add(ScanResults.Type.MODULE_LAYER_DEFINITION, moduleLayerFile, 1,
+                    "Missing layer file specified in manifest " + moduleLayerFile);
+            return;
+        }
+        Iterable<LayerData> layerEntries = new LayerParser().parse(
+                new FileInputStream(layerFile));
+        for (LayerData layerEntry : layerEntries) {
+            boolean found = false;
+            for (String p: packages.keySet()) {
+                if (p.equals(layerEntry.bundlePath)) {
+                    if (!packages.get(p).markAsUsed(layerEntry.bundleKey)) {
+                        results.add(ScanResults.Type.MODULE_LAYER_DEFINITION, layerFile.getAbsolutePath(), 1,
+                                "Missing resource bundle key " + layerEntry.bundleKey +
+                                " specified in layer file: " + layerEntry.info);
+
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            // want to raise a warning - it can refer to bundle in a different module so it is OK
+//            if (!found) {
+//                results.add(ScanResults.Type.MODULE_LAYER_DEFINITION, layerFile.getAbsolutePath(), 1,
+//                        "Missing resource bundle specified in layer file: " + layerEntry.info);
+//            }
+        }
     }
 
     /** Print results to System.out
@@ -111,6 +151,31 @@ public class ModuleScanner {
                             pack = pack.substring(0, index);
                         }
                         return pack;
+                    }
+                }
+            } finally {
+                fr.close();
+            }
+        }
+        return null;
+    }
+
+    /** Return path to module's layer file
+     */
+    private String findModuleLayer() throws IOException {
+        File manifest = new File(rootDir, MANIFEST_FILE);
+        if (manifest.exists() && manifest.isFile()) {
+            FileReader fr = new FileReader(manifest);
+            try {
+                BufferedReader br = new BufferedReader(fr);
+                for (;;) {
+                    String line = br.readLine();
+                    if (line == null) {
+                        break;
+                    }
+                    if (line.startsWith(MANIFEST_LAYER_LINK)) {
+                        String layerName = line.substring(MANIFEST_LAYER_LINK.length()).trim();
+                        return layerName;
                     }
                 }
             } finally {
