@@ -15,6 +15,7 @@
  */
 package org.i18nchecker.impl;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -115,8 +116,9 @@ public class LayerParser {
                 String bundlevalue = node.getTextContent();
                 int idx = bundlevalue.indexOf('#');
                 String bundleFile = bundlevalue.substring(0, idx).replace('.', '/');
+                bundleFile = bundleFile.replace('/', File.separatorChar);
                 // assume that last part is Bundle
-                bundleFile = bundleFile.substring(0, bundleFile.lastIndexOf('/'));
+                bundleFile = bundleFile.substring(0, bundleFile.lastIndexOf(File.separatorChar));
                 String bundleKey = bundlevalue.substring(idx + 1);
                 Stack<String> stack = new Stack<String>();
                 for (Node n = node;
@@ -130,7 +132,7 @@ public class LayerParser {
                 }
                 StringBuilder sb = new StringBuilder();
                 while (!stack.empty()) {
-                    sb.append('/').append(stack.pop());
+                    sb.append(File.separatorChar).append(stack.pop());
                 }
                 data.add(new LayerData(
                         bundleFile, bundleKey, "bundle key referenced in " + sb.toString() + " not found"));
