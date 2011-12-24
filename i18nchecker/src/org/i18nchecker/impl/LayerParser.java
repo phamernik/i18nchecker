@@ -132,7 +132,7 @@ public class LayerParser {
                 }
                 StringBuilder sb = new StringBuilder();
                 while (!stack.empty()) {
-                    sb.append(File.separatorChar).append(stack.pop());
+                    sb.append('/').append(stack.pop());
                 }
                 data.add(new LayerData(
                         bundleFile, bundleKey, "bundle key referenced in " + sb.toString() + " not found"));

@@ -15,6 +15,7 @@
 */
 package org.i18nchecker.impl;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import org.junit.Test;
@@ -37,7 +38,8 @@ public class LayerParserTest {
             results.add(entry);
         }
         LayerParser.LayerData entry = new LayerParser.LayerData(
-                "com/im/ijc/examples/viewcustomizer", "CTL_CustomizeViewAction", null);
+                "com/im/ijc/examples/viewcustomizer".replace('/', File.separatorChar),
+                "CTL_CustomizeViewAction", null);
         assertEquals(1, results.size());
         assertTrue(results.toString(), results.contains(entry));
         assertTrue(results.toString(), results.get(0).info.contains(
