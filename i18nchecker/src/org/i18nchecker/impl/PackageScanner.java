@@ -34,6 +34,9 @@ class PackageScanner {
     /** One primary resource bundle per package. */
     private PrimaryResourceBundleModel primaryBundle;
 
+    /** Default bundles other than the primary bundle. */
+    private Set<PrimaryResourceBundleModel> otherBundles;
+    
     /** Translations */
     private Set<TranslatedResourceBundleModel> translatedBundles;
 
@@ -47,6 +50,7 @@ class PackageScanner {
         this.packageDir = packageDir;
         this.sources = new TreeMap<String, JavaSourceModel>();
         this.translatedBundles = new HashSet<TranslatedResourceBundleModel>();
+        this.otherBundles = new HashSet<PrimaryResourceBundleModel>();
         this.simpleName = packageDir.getCanonicalPath().substring(moduleDirName.length()).replace(File.separator, "/");
     }
 
@@ -67,6 +71,9 @@ class PackageScanner {
             case TRANSLATED_BUNDLE:
                 translatedBundles.add(new TranslatedResourceBundleModel(packageDir + File.separator + name));
                 break;
+            case OTHER_BUNDLE:
+                otherBundles.add(new PrimaryResourceBundleModel(packageDir + File.separator + name));
+                break;
             case JAVA:
                 sources.put(name, new JavaSourceModel(packageDir + File.separator + name));
                 break;
@@ -81,6 +88,9 @@ class PackageScanner {
         if (primaryBundle != null) {
             primaryBundle.parse();
         }
+        for (PrimaryResourceBundleModel other: otherBundles) {
+            other.parse();
+        }
         for (TranslatedResourceBundleModel translated: translatedBundles) {
             translated.parse();
         }
@@ -94,6 +104,9 @@ class PackageScanner {
     public void verify() {
         for (JavaSourceModel source: sources.values()) {
             source.verify(primaryBundle);
+            for (PrimaryResourceBundleModel other: otherBundles) {
+                source.verify(other);
+            }
         }
     }
 
@@ -121,6 +134,9 @@ class PackageScanner {
         }
         if (primaryBundle != null) {
             primaryBundle.reportResults(results);
+        }
+        for (PrimaryResourceBundleModel other: otherBundles) {
+            other.reportResults(results);
         }
         for (TranslatedResourceBundleModel trb: translatedBundles) {
             trb.reportResults(results);

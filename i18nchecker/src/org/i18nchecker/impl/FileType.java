@@ -17,13 +17,14 @@
 package org.i18nchecker.impl;
 
 /**
- * Type of file - java source (*.java), primary properties resource bundle (Bundle.properties) or tranlations (Bundle_*.properties)
+ * Type of file - java source (*.java), primary properties resource bundle (Bundle.properties) or translations (Bundle_*.properties)
  *
  * @author Petr Hamernik
  */
 enum FileType {
     PRIMARY_BUNDLE("**\\Bundle.properties"),
-    TRANSLATED_BUNDLE("**\\Bundle_*.properties"),
+    TRANSLATED_BUNDLE("**\\*_??.properties"),
+    OTHER_BUNDLE("**\\*.properties"),
     JAVA("**\\*.java");
 
     private String filter;

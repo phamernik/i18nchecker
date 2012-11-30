@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -52,9 +54,16 @@ public class ModuleScanner {
 
     /** Scan module, verify I18N and collects results */
     public void scan() throws IOException {
+        scan(false);
+    }
+    
+    public void scan(Boolean allBundles) throws IOException {
         scanFiles(FileType.PRIMARY_BUNDLE);
         scanFiles(FileType.TRANSLATED_BUNDLE);
         scanFiles(FileType.JAVA);
+        if (allBundles) {
+            scanFiles(FileType.OTHER_BUNDLE);
+        }
 
         for (PackageScanner ps: packages.values()) {
             ps.parseFiles();
@@ -192,9 +201,20 @@ public class ModuleScanner {
         ds.setIncludes(type.getFilter());
         ds.scan();
         String[] files = ds.getIncludedFiles();
+        List<String> excludeFiles = new ArrayList<String>();
+        if (type.equals(FileType.OTHER_BUNDLE)) {
+            ds = new DirectoryScanner();
+            ds.setCaseSensitive(true);
+            ds.setBasedir(new File(rootDir, SRC_DIR));
+            ds.setIncludes(FileType.TRANSLATED_BUNDLE.getFilter());
+            ds.scan();
+            excludeFiles = Arrays.asList(ds.getIncludedFiles());
+        }
         for (String name: files) {
-            String[] splitName = splitPackage(name);
-            getPackage(splitName[0]).addFile(type, splitName[1]);
+            if (!excludeFiles.contains(name)) {
+                String[] splitName = splitPackage(name);
+                getPackage(splitName[0]).addFile(type, splitName[1]);
+            }
         }
     }
 

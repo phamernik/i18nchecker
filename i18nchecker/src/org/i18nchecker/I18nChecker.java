@@ -58,6 +58,7 @@ public class I18nChecker extends Task {
     private String language;
     private File exportToFile;
     private File importFromFile;
+    private Boolean allProperties = false;
 
     private String moduleFilter;
 
@@ -79,6 +80,12 @@ public class I18nChecker extends Task {
         this.language = language;
     }
 
+    /**
+     * Scan all resource bundles, instead of just Bundle.properties?
+     */
+    public void setAllProperties(String allProperties) {
+        this.allProperties = Boolean.parseBoolean(allProperties);
+    }
     /**
      * Export resource bundles to a single csv file for given language
      */
@@ -102,12 +109,12 @@ public class I18nChecker extends Task {
         System.out.println("Scanning modules...\n");
         try {
             if (language == null) {
-                printErrors(rootDir, topDirsToScan, moduleFilter);
+                printErrors(rootDir, topDirsToScan, moduleFilter, allProperties);
             } else {
                 if (exportToFile != null) {
-                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter);
+                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter, allProperties);
                 } else if (importFromFile != null) {
-                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter);
+                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter, allProperties);
                 }
             }
         } catch (IOException exc) {
@@ -116,12 +123,12 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 1 - print all I18N errors to console */
-    private static void printErrors(File rootDir, List<String> topDirsToScan, String moduleFilter) throws IOException {
+    private static void printErrors(File rootDir, List<String> topDirsToScan, String moduleFilter, Boolean allProperties) throws IOException {
         StringBuilder summary = new StringBuilder();
         int total = 0;
         List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
         for (ModuleScanner moduleScanner: modules) {
-            moduleScanner.scan();
+            moduleScanner.scan(allProperties);
             moduleScanner.printResults(true);
             int problemsCount = moduleScanner.getProblemsCount();
             total += problemsCount;
@@ -135,12 +142,12 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 2 - prepare CSV for translation */
-    private static void exportToFile(File rootDir, List<String> topDirsToScan, String language, File exportToFile, String moduleFilter) throws IOException {
+    private static void exportToFile(File rootDir, List<String> topDirsToScan, String language, File exportToFile, String moduleFilter, Boolean allProperties) throws IOException {
         List<String> exportedStrings = new LinkedList<String>();
         exportedStrings.add(TranslatedData.getCSVFileHeader());
         List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
         for (ModuleScanner moduleScanner: modules) {
-            moduleScanner.scan();
+            moduleScanner.scan(allProperties);
             moduleScanner.printResults(false);
             moduleScanner.bundle2csv(language, exportedStrings);
         }
@@ -149,12 +156,12 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 3 - use translation from CSV and apply it into appropriate resource bundle files */
-    private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter) throws IOException {
+    private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter, Boolean allProperties) throws IOException {
         TranslatedData translatedData = new TranslatedData(importFromFile);
         List<String> header = I18NUtils.createTranslationFilesHeader(I18nChecker.class.getName(), rootDir, importFromFile);
         List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
         for (ModuleScanner moduleScanner: modules) {
-            moduleScanner.scan();
+            moduleScanner.scan(allProperties);
             Map<String, Map<String,String>> translatedModule = translatedData.getTranslationsForModule(moduleScanner.getModuleSimpleName());
             if (translatedModule != null) {
                 moduleScanner.csv2bundle(language, header, translatedModule);
