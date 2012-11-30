@@ -39,6 +39,7 @@ class JavaSourceModel {
 
     private static final String NOI18N = "NOI18N";
     private static final String NB_BUNDLE = "NbBundle";
+    private static final String RESOURCE_BUNDLE = "ResourceBundle";
 
     private static final String FONT = "Font";
     private static final List<String> KNONW_FONTS = Arrays.asList(new String [] {
@@ -61,6 +62,7 @@ class JavaSourceModel {
             CharStream stream = new ANTLRReaderStream(fr);
             JavaLexer lexer = new JavaLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
+            tokens.toString(); // if the token stream is forced to process all tokens, the following list is empty
             List<?> list = tokens.getTokens();
             int lineOfLastNbBundleOccurence = -1;
             int lineOfLastAnnotationOccurence = -1;
@@ -93,6 +95,7 @@ class JavaSourceModel {
                         }
                     }
                     boolean isCloseToNbBundle = (line == lineOfLastNbBundleOccurence);
+                    // how do I get a getString(my_string) call to be noticed?
                     strings.add(new Info(str, line, isCloseToNbBundle));
                 } else if (token.getType() == JavaLexer.LINE_COMMENT) {
                     if (token.getText().indexOf(NOI18N) >= 0) {
@@ -103,7 +106,7 @@ class JavaSourceModel {
                         }
                     }
                 } else if (token.getType() == JavaLexer.Identifier) {
-                    if (token.getText().equals(NB_BUNDLE)) {
+                    if (token.getText().equals(NB_BUNDLE) || token.getText().equals(RESOURCE_BUNDLE)) {
                         lineOfLastNbBundleOccurence = line;
                     } else if (token.getText().equals(FONT)) {
                         lineOfLastFont = line;
