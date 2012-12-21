@@ -39,7 +39,8 @@ class JavaSourceModel {
 
     private static final String NOI18N = "NOI18N";
     private static final String NB_BUNDLE = "NbBundle";
-    private static final String RESOURCE_BUNDLE = "ResourceBundle";
+    private static final String GET_BUNDLE = "getBundle"; // Matches ResourceBundle.getBundle class method
+    private static final String GET_STRING = "getString"; // Matches ResourceBundle.getString instance method
 
     private static final String FONT = "Font";
     private static final List<String> KNONW_FONTS = Arrays.asList(new String [] {
@@ -66,6 +67,7 @@ class JavaSourceModel {
             List<?> list = tokens.getTokens();
             int lineOfLastNbBundleOccurence = -1;
             int lineOfLastAnnotationOccurence = -1;
+            int lineOfLastGetBundleOccurence = -1;
             int lineOfLastAssert = -1;
             int lineOfLastFont = -1;
             for (Object obj: list) {
@@ -95,8 +97,9 @@ class JavaSourceModel {
                         }
                     }
                     boolean isCloseToNbBundle = (line == lineOfLastNbBundleOccurence);
-                    // how do I get a getString(my_string) call to be noticed?
-                    strings.add(new Info(str, line, isCloseToNbBundle));
+                    if (line != lineOfLastGetBundleOccurence) {
+                        strings.add(new Info(str, line, isCloseToNbBundle));
+                    }
                 } else if (token.getType() == JavaLexer.LINE_COMMENT) {
                     if (token.getText().indexOf(NOI18N) >= 0) {
                         for (Info info: strings) {
@@ -106,10 +109,12 @@ class JavaSourceModel {
                         }
                     }
                 } else if (token.getType() == JavaLexer.Identifier) {
-                    if (token.getText().equals(NB_BUNDLE) || token.getText().equals(RESOURCE_BUNDLE)) {
+                    if (token.getText().equals(NB_BUNDLE) || token.getText().equals(GET_STRING)) {
                         lineOfLastNbBundleOccurence = line;
                     } else if (token.getText().equals(FONT)) {
                         lineOfLastFont = line;
+                    } else if (token.getText().equals(GET_BUNDLE)) {
+                        lineOfLastGetBundleOccurence = line;
                     }
                 } else if (token.getType() == JavaLexer.T__73) { // @ character - annotation
                     lineOfLastAnnotationOccurence = line;
