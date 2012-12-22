@@ -179,10 +179,23 @@ public class I18nChecker extends Task {
      * @throws IOException
      */
     public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules) throws IOException {
+        return runAsTest(rootDir, topDirs, unfinishedModules, false);
+    }
+    
+    /**
+     * Mode 4 - This method is used from unit test I18NTest using introspection.
+     *
+     * @param rootDir root directory of repository
+     * @param topDirs comma separated top level directories containing modules (e.g. "modules,libraries")
+     * @param unfinishedModules contains map with counts of known problems in each module. Module names are in form e.g. "libraries/Jchem" or "modules/DIF_API", etc.
+     * @param allProperties consider all .properties files in a package instead of just Bundle.properties
+     * @throws IOException
+     */
+    public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules, boolean allProperties) throws IOException {
         StringBuilder result = new StringBuilder();
         List<ModuleScanner> modules = getModules(rootDir, Arrays.asList(topDirs.split(",")), null);
         for (ModuleScanner moduleScanner: modules) {
-            moduleScanner.scan();
+            moduleScanner.scan(allProperties);
             String moduleSimpleName = moduleScanner.getModuleSimpleName();
             int expectedMaximumProblems = unfinishedModules.containsKey(moduleSimpleName) ? unfinishedModules.get(moduleSimpleName) : 0;
             int actualProblems = moduleScanner.getProblemsCount();
