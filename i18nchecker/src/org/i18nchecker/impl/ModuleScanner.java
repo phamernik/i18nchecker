@@ -60,10 +60,10 @@ public class ModuleScanner {
     public void scan(Boolean allBundles) throws IOException {
         scanFiles(FileType.PRIMARY_BUNDLE);
         scanFiles(FileType.TRANSLATED_BUNDLE);
-        scanFiles(FileType.JAVA);
         if (allBundles) {
             scanFiles(FileType.OTHER_BUNDLE);
         }
+        scanFiles(FileType.JAVA);
 
         for (PackageScanner ps: packages.values()) {
             ps.parseFiles();
