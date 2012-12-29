@@ -59,6 +59,8 @@ public class I18nChecker extends Task {
     private File exportToFile;
     private File importFromFile;
     private Boolean allProperties = false;
+    private String logger = null;
+    private List<String> loggerMethods = null;
 
     private String moduleFilter;
 
@@ -247,6 +249,21 @@ public class I18nChecker extends Task {
             }
         });
         return modules;
+    }
+
+    /**
+     * @param logger the logger to set
+     */
+    public void setLogger(String logger) {
+        this.logger = logger;
+    }
+
+    /**
+     * @param loggerMethods the loggerMethods to set
+     */
+    public void setLoggerMethods(String loggerMethods) {
+        String[] methodArr = loggerMethods.split(",");
+        this.loggerMethods = Arrays.asList(methodArr);
     }
 
 }
