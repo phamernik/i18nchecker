@@ -44,6 +44,9 @@ public class ModuleScanner {
     private Map<String, PackageScanner> packages;
     private ScanResults results;
     private String simpleName;
+    
+    private String logger = null;
+    private List<String> loggerMethods = null;
 
     public ModuleScanner(File rootDir) throws IOException {
         this.rootDir = rootDir;
@@ -223,6 +226,7 @@ public class ModuleScanner {
         if (ps == null) {
             String moduleDirName = rootDir.getCanonicalPath() + File.separator + SRC_DIR + File.separator;
             ps = new PackageScanner(new File(rootDir + File.separator + SRC_DIR + File.separator + pack), moduleDirName);
+            ps.setLogger(logger, loggerMethods);
             packages.put(pack, ps);
         }
         return ps;
@@ -268,5 +272,13 @@ public class ModuleScanner {
                 ps.csv2bundle(language, header, translatedPackage);
             }
         }
+    }
+
+    /**
+     * @param logger the logger to set
+     */
+    public void setLogger(String logger, List<String> loggerMethods) {
+        this.logger = logger;
+        this.loggerMethods = loggerMethods;
     }
 }

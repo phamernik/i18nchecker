@@ -46,6 +46,9 @@ class PackageScanner {
     /** Simple package name e.g. "com/im/df/api" */
     private String simpleName;
 
+    private String logger = null;
+    private List<String> loggerMethods = null;
+    
     public PackageScanner(File packageDir, String moduleDirName) throws IOException {
         this.packageDir = packageDir;
         this.sources = new TreeMap<String, JavaSourceModel>();
@@ -95,6 +98,7 @@ class PackageScanner {
             translated.parse();
         }
         for (JavaSourceModel source: sources.values()) {
+            source.setLogger(logger, loggerMethods);
             source.parse();
         }
     }
@@ -170,5 +174,13 @@ class PackageScanner {
 
     public String getSimpleName() {
         return simpleName;
+    }
+
+    /**
+     * @param logger the logger to set
+     */
+    public void setLogger(String logger, List<String> loggerMethods) {
+        this.logger = logger;
+        this.loggerMethods = loggerMethods;
     }
 }

@@ -50,6 +50,9 @@ class JavaSourceModel {
     private String fileName;
     private List<Info> strings;
 
+    private String logger = null;
+    private List<String> loggerMethods = null;
+    
     public JavaSourceModel(String fileName) {
         this.fileName = fileName;
     }
@@ -68,6 +71,8 @@ class JavaSourceModel {
             int lineOfLastNbBundleOccurence = -1;
             int lineOfLastAnnotationOccurence = -1;
             int lineOfLastGetBundleOccurence = -1;
+            int lineOfLastLoggerOccurence = -1;
+            int lineOfLastLoggerMethodOccurence = -1;
             int lineOfLastAssert = -1;
             int lineOfLastFont = -1;
             for (Object obj: list) {
@@ -97,7 +102,7 @@ class JavaSourceModel {
                         }
                     }
                     boolean isCloseToNbBundle = (line == lineOfLastNbBundleOccurence);
-                    if (line != lineOfLastGetBundleOccurence) {
+                    if (line != lineOfLastGetBundleOccurence && line != lineOfLastLoggerMethodOccurence) {
                         strings.add(new Info(str, line, isCloseToNbBundle));
                     }
                 } else if (token.getType() == JavaLexer.LINE_COMMENT) {
@@ -115,6 +120,10 @@ class JavaSourceModel {
                         lineOfLastFont = line;
                     } else if (token.getText().equals(GET_BUNDLE)) {
                         lineOfLastGetBundleOccurence = line;
+                    } else if (logger != null && token.getText().equals(logger)) {
+                        lineOfLastLoggerOccurence = line;
+                    } else if (line == lineOfLastLoggerOccurence && loggerMethods.contains(token.getText())) {
+                        lineOfLastLoggerMethodOccurence = line;
                     }
                 } else if (token.getType() == JavaLexer.T__73) { // @ character - annotation
                     lineOfLastAnnotationOccurence = line;
@@ -164,6 +173,14 @@ class JavaSourceModel {
                 }
             }
         }
+    }
+
+    /**
+     * @param logger the logger to set
+     */
+    public void setLogger(String logger, List<String> loggerMethods) {
+        this.logger = logger;
+        this.loggerMethods = loggerMethods;
     }
 
     /** Info about one string in java source */

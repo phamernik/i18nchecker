@@ -111,12 +111,12 @@ public class I18nChecker extends Task {
         System.out.println("Scanning modules...\n");
         try {
             if (language == null) {
-                printErrors(rootDir, topDirsToScan, moduleFilter, allProperties);
+                printErrors(rootDir, topDirsToScan, moduleFilter, allProperties, logger, loggerMethods);
             } else {
                 if (exportToFile != null) {
-                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter, allProperties);
+                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter, allProperties, logger, loggerMethods);
                 } else if (importFromFile != null) {
-                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter, allProperties);
+                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter, allProperties, logger, loggerMethods);
                 }
             }
         } catch (IOException exc) {
@@ -125,10 +125,10 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 1 - print all I18N errors to console */
-    private static void printErrors(File rootDir, List<String> topDirsToScan, String moduleFilter, Boolean allProperties) throws IOException {
+    private static void printErrors(File rootDir, List<String> topDirsToScan, String moduleFilter, Boolean allProperties, String logger, List<String> loggerMethods) throws IOException {
         StringBuilder summary = new StringBuilder();
         int total = 0;
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, logger, loggerMethods);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan(allProperties);
             moduleScanner.printResults(true);
@@ -144,10 +144,10 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 2 - prepare CSV for translation */
-    private static void exportToFile(File rootDir, List<String> topDirsToScan, String language, File exportToFile, String moduleFilter, Boolean allProperties) throws IOException {
+    private static void exportToFile(File rootDir, List<String> topDirsToScan, String language, File exportToFile, String moduleFilter, Boolean allProperties, String logger, List<String> loggerMethods) throws IOException {
         List<String> exportedStrings = new LinkedList<String>();
         exportedStrings.add(TranslatedData.getCSVFileHeader());
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, logger, loggerMethods);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan(allProperties);
             moduleScanner.printResults(false);
@@ -158,10 +158,10 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 3 - use translation from CSV and apply it into appropriate resource bundle files */
-    private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter, Boolean allProperties) throws IOException {
+    private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter, Boolean allProperties, String logger, List<String> loggerMethods) throws IOException {
         TranslatedData translatedData = new TranslatedData(importFromFile);
         List<String> header = I18NUtils.createTranslationFilesHeader(I18nChecker.class.getName(), rootDir, importFromFile);
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, logger, loggerMethods);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan(allProperties);
             Map<String, Map<String,String>> translatedModule = translatedData.getTranslationsForModule(moduleScanner.getModuleSimpleName());
@@ -181,7 +181,7 @@ public class I18nChecker extends Task {
      * @throws IOException
      */
     public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules) throws IOException {
-        return runAsTest(rootDir, topDirs, unfinishedModules, false);
+        return runAsTest(rootDir, topDirs, unfinishedModules, false, null, null);
     }
     
     /**
@@ -193,9 +193,9 @@ public class I18nChecker extends Task {
      * @param allProperties consider all .properties files in a package instead of just Bundle.properties
      * @throws IOException
      */
-    public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules, boolean allProperties) throws IOException {
+    public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules, boolean allProperties, String logger, List<String> loggerMethods) throws IOException {
         StringBuilder result = new StringBuilder();
-        List<ModuleScanner> modules = getModules(rootDir, Arrays.asList(topDirs.split(",")), null);
+        List<ModuleScanner> modules = getModules(rootDir, Arrays.asList(topDirs.split(",")), null, logger, loggerMethods);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan(allProperties);
             String moduleSimpleName = moduleScanner.getModuleSimpleName();
@@ -215,7 +215,7 @@ public class I18nChecker extends Task {
      * @param topLevelDirs Dirs like "modules", "libraries", "commons", etc. to be scanned
      * @return
      */
-    private static List<ModuleScanner> getModules(File root, List<String> topLevelDirs, String filter) throws IOException {
+    private static List<ModuleScanner> getModules(File root, List<String> topLevelDirs, String filter, String logger, List<String> loggerMethods) throws IOException {
         List<ModuleScanner> modules = new ArrayList<ModuleScanner>();
         for (String name: topLevelDirs) {
             File topLevelDir = new File(root, name);
@@ -228,6 +228,7 @@ public class I18nChecker extends Task {
                     File srcDir = new File(f, ModuleScanner.SRC_DIR);
                     if (srcDir.exists() && srcDir.isDirectory()) {
                         ModuleScanner module = new ModuleScanner(f);
+                        module.setLogger(logger, loggerMethods);
                         if ((filter != null) && (filter.length() > 0)) {
                             if (!module.getModuleSimpleName().contains(filter)) {
                                 continue;
