@@ -39,6 +39,8 @@ class JavaSourceModel {
 
     private static final String NOI18N = "NOI18N";
     private static final String NB_BUNDLE = "NbBundle";
+    private static final String GET_BUNDLE = "getBundle"; // Matches ResourceBundle.getBundle class method
+    private static final String GET_STRING = "getString"; // Matches ResourceBundle.getString instance method
 
     private static final String FONT = "Font";
     private static final List<String> KNONW_FONTS = Arrays.asList(new String [] {
@@ -48,6 +50,9 @@ class JavaSourceModel {
     private String fileName;
     private List<Info> strings;
 
+    private String logger = null;
+    private List<String> loggerMethods = null;
+    
     public JavaSourceModel(String fileName) {
         this.fileName = fileName;
     }
@@ -61,9 +66,13 @@ class JavaSourceModel {
             CharStream stream = new ANTLRReaderStream(fr);
             JavaLexer lexer = new JavaLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
+            tokens.toString(); // if the token stream is forced to process all tokens, the following list is empty
             List<?> list = tokens.getTokens();
             int lineOfLastNbBundleOccurence = -1;
             int lineOfLastAnnotationOccurence = -1;
+            int lineOfLastGetBundleOccurence = -1;
+            int lineOfLastLoggerOccurence = -1;
+            int lineOfLastLoggerMethodOccurence = -1;
             int lineOfLastAssert = -1;
             int lineOfLastFont = -1;
             for (Object obj: list) {
@@ -93,7 +102,9 @@ class JavaSourceModel {
                         }
                     }
                     boolean isCloseToNbBundle = (line == lineOfLastNbBundleOccurence);
-                    strings.add(new Info(str, line, isCloseToNbBundle));
+                    if (line != lineOfLastGetBundleOccurence && line != lineOfLastLoggerMethodOccurence) {
+                        strings.add(new Info(str, line, isCloseToNbBundle));
+                    }
                 } else if (token.getType() == JavaLexer.LINE_COMMENT) {
                     if (token.getText().indexOf(NOI18N) >= 0) {
                         for (Info info: strings) {
@@ -103,10 +114,16 @@ class JavaSourceModel {
                         }
                     }
                 } else if (token.getType() == JavaLexer.Identifier) {
-                    if (token.getText().equals(NB_BUNDLE)) {
+                    if (token.getText().equals(NB_BUNDLE) || token.getText().equals(GET_STRING)) {
                         lineOfLastNbBundleOccurence = line;
                     } else if (token.getText().equals(FONT)) {
                         lineOfLastFont = line;
+                    } else if (token.getText().equals(GET_BUNDLE)) {
+                        lineOfLastGetBundleOccurence = line;
+                    } else if (logger != null && token.getText().equals(logger)) {
+                        lineOfLastLoggerOccurence = line;
+                    } else if (line == lineOfLastLoggerOccurence && loggerMethods.contains(token.getText())) {
+                        lineOfLastLoggerMethodOccurence = line;
                     }
                 } else if (token.getType() == JavaLexer.T__73) { // @ character - annotation
                     lineOfLastAnnotationOccurence = line;
@@ -156,6 +173,14 @@ class JavaSourceModel {
                 }
             }
         }
+    }
+
+    /**
+     * @param logger the logger to set
+     */
+    public void setLogger(String logger, List<String> loggerMethods) {
+        this.logger = logger;
+        this.loggerMethods = loggerMethods;
     }
 
     /** Info about one string in java source */
