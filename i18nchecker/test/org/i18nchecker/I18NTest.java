@@ -46,24 +46,10 @@ public class I18NTest extends TestCase {
             "/lib/antlr-runtime-3.2.jar",
             "/lib/SuperCSV-1.52.jar" }));
         Class<?> c = loader.loadClass("org.i18nchecker.I18nChecker");
-        Method runAsTestMethod = c.getMethod("runAsTest", File.class, List.class, List.class, Map.class);
+        Method runAsTestMethod = c.getMethod("runAsTest", File.class, String.class, Map.class);
 
-        Map<String, Integer> unfinishedModules = getUnfinishedI18NModules();
-        String result = (String) runAsTestMethod.invoke(
-                null,
-                rootDir,
-                Arrays.asList(new String[] {
-                    "i18nchecker/playground/PaintApp",
-                    "i18nchecker/playground/module1",
-                    "i18nchecker/playground/module2",
-                    "i18nchecker/playground/module3",
-                    "i18nchecker/playground/module4",
-                    "i18nchecker/playground/PaintApp/ColorChooser",
-                    "i18nchecker/playground/PaintApp/Paint",
-                }),
-                Collections.<String>emptyList(),
-                unfinishedModules
-        );
+        Map<String,Integer> unfinishedModules = getUnfinishedI18NModules();
+        String result = (String) runAsTestMethod.invoke(null, rootDir, "i18nchecker/playground,i18nchecker/playground/PaintApp", unfinishedModules);
         if (!result.isEmpty()) {
             fail(result);
         }

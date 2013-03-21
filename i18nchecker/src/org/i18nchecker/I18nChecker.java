@@ -17,7 +17,9 @@
 package org.i18nchecker;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,9 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
-import org.apache.tools.ant.types.Path;
 import org.i18nchecker.impl.I18NUtils;
 import org.i18nchecker.impl.ModuleScanner;
 import org.i18nchecker.impl.TranslatedData;
@@ -57,30 +60,24 @@ public final class I18nChecker extends Task {
     private static final MessageFormat TEST_ERROR =
             new MessageFormat("Module {0}: Found {1} errors in I18N (expected <= {2}).\n");
 
-    private Path modules;
-    private Path sourceRoots;
-
     private File repoRoot;
+    private List<String> topDirsToScan;
+
     private String language;
     private File exportToFile;
     private File importFromFile;
 
-    public Path createModules() {
-        if (modules == null) {
-            modules = new Path(getProject());
-        }
-        return modules;
+    private String moduleFilter;
+
+    /** Mandatory property - root of repository */
+    public void setSrcDir(File f) {
+        repoRoot = f;
     }
 
-    public Path createSourceRoots() {
-        if (sourceRoots == null) {
-            sourceRoots = new Path(getProject());
-        }
-        return sourceRoots;
-    }
-
-    public void setRepoRoot(File repoRoot) {
-        this.repoRoot = repoRoot;
+    /** Mandatory property - names of top-lever directories (under root dir) which should be scanned for modules. */
+    public void setTopDirs(String dirs) {
+        String[] dirsArr = dirs.split(",");
+        topDirsToScan = Arrays.asList(dirsArr);
     }
 
     /**
@@ -104,17 +101,17 @@ public final class I18nChecker extends Task {
         this.importFromFile = importFromFile;
     }
 
+    public void setModuleFilter(String moduleFilter) {
+        this.moduleFilter = moduleFilter;
+    }
+
     @Override
     public void execute() throws BuildException {
         try {
             log("Scanning modules...");
+
             List<ModuleScanner> scanners = new ArrayList<ModuleScanner>();
-            if (modules != null) {
-                collectScanners(scanners, Arrays.asList(modules.list()), true);
-            }
-            if (sourceRoots != null) {
-                collectScanners(scanners, Arrays.asList(sourceRoots.list()), false);
-            }
+            collectScanners(scanners, repoRoot, topDirsToScan, moduleFilter);
 
             log("Collected " + scanners.size() + " scanners.");
 
@@ -200,11 +197,8 @@ public final class I18nChecker extends Task {
      * Mode 4 - This method is used from unit test I18NTest using introspection.
      *
      * @param repoRoot The root of the source code repository.
-     * @param modulePaths A list of NetBeans module folders.
+     * @param topDirs A list of folder to scan for NetBeans or Maven projects.
      *   The list should contain relative paths from the {@code repoRoot} folder.
-     * @param sourceRootPaths A list of sources roots. These are the folders where the java source hierarchy starts.
-     *   The list should contain relative paths from the {@code repoRoot} folder. The list is intended for
-     *   non-NetBeans module projects such as simple class library projects, etc.
      * @param unfinishedModules The map with relative paths and error counts from a previous run of this method.
      *   The map serves as a baseline for the error checks. The keys are the relative paths
      *   from either {@code modulePaths} and {@code sourceRootPaths} lists.
@@ -213,18 +207,11 @@ public final class I18nChecker extends Task {
      * @throws IOException If an I/O error occurs while scanning.
      */
     public static String runAsTest(
-            File repoRoot,
-            List<String> modulePaths,
-            List<String> sourceRootPaths,
-            Map<String, Integer> unfinishedModules
+            File repoRoot, String topDirs, Map<String, Integer> unfinishedModules
     ) throws IOException {
 
-        List<String> resolvedModulePaths = resolvePaths(repoRoot, modulePaths);
-        List<String> resolvedSourceRootPaths = resolvePaths(repoRoot, sourceRootPaths);
-
         List<ModuleScanner> scanners = new ArrayList<ModuleScanner>();
-        collectScanners(scanners, resolvedModulePaths, true);
-        collectScanners(scanners, resolvedSourceRootPaths, false);
+        collectScanners(scanners, repoRoot, Arrays.asList(topDirs.split(",")), null);
 
         StringBuilder result = new StringBuilder();
         for (ModuleScanner moduleScanner: scanners) {
@@ -246,16 +233,26 @@ public final class I18nChecker extends Task {
     }
 
     private static void collectScanners(
-            List<ModuleScanner> scanners, Iterable<String> dirs, boolean scanNbArtifacts
+            List<ModuleScanner> scanners, File repoRoot, Iterable<String> topDirsToScan, String moduleFilter
     ) throws IOException {
-        for (String dir : dirs) {
-            File d = new File(dir);
-            if (!d.exists() || !d.isDirectory()) {
-                throw new IOException("Directory does not exist:" + d.getCanonicalPath());
+        for (String topDirToScan : topDirsToScan) {
+            File topDir = new File(repoRoot, topDirToScan);
+            if (!topDir.exists() || !topDir.isDirectory()
+                || (moduleFilter != null && moduleFilter.length() > 0 && !topDirToScan.contains(moduleFilter))
+            ) {
+                return;
             }
 
-            ModuleScanner scanner = new ModuleScanner(d, scanNbArtifacts);
-            scanners.add(scanner);
+            for (File f : topDir.listFiles()) {
+                if (moduleFilter != null && moduleFilter.length() > 0 && !f.getName().contains(moduleFilter)) {
+                    continue;
+                }
+                if (isNbmManifest(new File(f, "manifest.mf"))) {
+                    scanners.add(new ModuleScanner(f, true));
+                } else if (isMavenProject(new File(f, "pom.xml"))) {
+                    scanners.add(new ModuleScanner(new File(f, "/src/main/java"), false));
+                }
+            }
         }
     }
 
@@ -285,11 +282,20 @@ public final class I18nChecker extends Task {
         }
     }
 
-    private static List<String> resolvePaths(File root, Iterable<String> relativePaths) throws IOException {
-        List<String> resolved = new ArrayList<String>();
-        for (String p : relativePaths) {
-            resolved.add(new File(root, p).getCanonicalPath());
+    private static boolean isNbmManifest(File manifest) throws IOException {
+        if (manifest.exists() && manifest.isFile()) {
+            InputStream is = new FileInputStream(manifest);
+            try {
+                Manifest m = new Manifest(is);
+                return m.getMainAttributes().containsKey(new Attributes.Name("OpenIDE-Module"));
+            } finally {
+                is.close();
+            }
         }
-        return resolved;
+        return false;
+    }
+
+    private static boolean isMavenProject(File pom) throws IOException {
+        return pom.exists() && pom.isFile();
     }
 }
