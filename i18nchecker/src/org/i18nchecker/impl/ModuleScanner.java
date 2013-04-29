@@ -33,27 +33,29 @@ import org.xml.sax.EntityResolver;
  *
  * @author Petr Hamernik
  */
-public class ModuleScanner {
-    public static final String SRC_DIR = "src";
-    public static final String MANIFEST_FILE = "manifest.mf";
-    private static final String MANIFEST_BUNDLE_LINK ="OpenIDE-Module-Localizing-Bundle: ";
-    private static final String MANIFEST_LAYER_LINK ="OpenIDE-Module-Layer: ";
+public final class ModuleScanner {
 
-    private File rootDir;
-    private Map<String, PackageScanner> packages;
-    private ScanResults results;
-    private String simpleName;
-    private EntityResolver resolver;
+    private static final String MANIFEST_FILE = "manifest.mf";
+    private static final String MANIFEST_BUNDLE_LINK = "OpenIDE-Module-Localizing-Bundle: ";
+    private static final String MANIFEST_LAYER_LINK = "OpenIDE-Module-Layer: ";
 
-    public ModuleScanner(File rootDir) throws IOException {
-        this.rootDir = rootDir;
-        this.packages = new TreeMap<String, PackageScanner>();
-        this.results = new ScanResults(rootDir.toString());
-        this.simpleName = createSimpleName(rootDir);
-    }
+    private final File root;
+    private final File sourceRoot;
+    private final boolean scanNbArtifacts;
+    private final Map<String, PackageScanner> packages;
+    private final ScanResults results;
 
-    public void setXMLCatalogResolver(EntityResolver resolver) {
+    private final EntityResolver resolver;
+    
+    public ModuleScanner(
+            File root, boolean scanNbArtifacts, EntityResolver resolver
+    ) throws IOException {
+        this.root = root;
+        this.sourceRoot = scanNbArtifacts ? new File(root, "src") : root;
+        this.scanNbArtifacts = scanNbArtifacts;
         this.resolver = resolver;
+        this.packages = new TreeMap<String, PackageScanner>();
+        this.results = new ScanResults(sourceRoot.getCanonicalPath());
     }
 
     /** Scan module, verify I18N and collects results */
@@ -66,8 +68,11 @@ public class ModuleScanner {
             ps.parseFiles();
             ps.verify();
         }
-        verifyManifest();
-        verifyLayer();
+
+        if (scanNbArtifacts) {
+            verifyManifest();
+            verifyLayer();
+        }
 
         for (PackageScanner ps: packages.values()) {
             ps.reportResults(results);
@@ -76,7 +81,12 @@ public class ModuleScanner {
 
     /** Check the module manifest and verify module's own resource bundle */
     private void verifyManifest() throws IOException {
-        String moduleBundlePack = findModuleBundlePackage();
+        File manifest = findManifest();
+        if (manifest == null) {
+            return;
+        }
+
+        String moduleBundlePack = findModuleBundlePackage(manifest);
         if (moduleBundlePack == null) {
             return;
         }
@@ -87,7 +97,12 @@ public class ModuleScanner {
                 return;
             }
         }
-        results.add(ScanResults.Type.MODULE_MANIFEST_BUNDLE, rootDir.getAbsolutePath() + File.separator + MANIFEST_FILE, 1, "Missing resource bundle specified in module manifest");
+        results.add(
+                ScanResults.Type.MODULE_MANIFEST_BUNDLE,
+                manifest.getAbsolutePath(),
+                1,
+                "Missing resource bundle specified in module manifest"
+        );
     }
 
     /** Check the module layer if there is one. */
@@ -96,7 +111,7 @@ public class ModuleScanner {
         if (moduleLayerFile == null) {
             return;
         }
-        final File layerFile = new File(rootDir, SRC_DIR + File.separator + moduleLayerFile);
+        final File layerFile = new File(sourceRoot, moduleLayerFile);
         if (!layerFile.exists()) {
             results.add(ScanResults.Type.MODULE_LAYER_DEFINITION, moduleLayerFile, 1,
                     "Missing layer file specified in manifest " + moduleLayerFile);
@@ -136,40 +151,46 @@ public class ModuleScanner {
         return results.getProblemsCount();
     }
 
+    private File findManifest() throws IOException {
+        File manifest = new File(sourceRoot.getParentFile(), MANIFEST_FILE);
+        if (manifest.exists() && manifest.isFile()) {
+            return manifest;
+        } else {
+            return null;
+        }
+    }
+
     /** Return path to module's own resource bundle as written in manifest.mf
      */
-    private String findModuleBundlePackage() throws IOException {
-        File manifest = new File(rootDir, MANIFEST_FILE);
-        if (manifest.exists() && manifest.isFile()) {
-            FileReader fr = new FileReader(manifest);
-            try {
-                BufferedReader br = new BufferedReader(fr);
-                for (;;) {
-                    String line = br.readLine();
-                    if (line == null) {
-                        break;
-                    }
-                    if (line.startsWith(MANIFEST_BUNDLE_LINK)) {
-                        String pack = line.substring(MANIFEST_BUNDLE_LINK.length()).trim().replace("/", File.separator);
-                        int index = pack.lastIndexOf(File.separator);
-                        if (index >= 0) {
-                            pack = pack.substring(0, index);
-                        }
-                        return pack;
-                    }
+    private String findModuleBundlePackage(File manifest) throws IOException {
+        FileReader fr = new FileReader(manifest);
+        try {
+            BufferedReader br = new BufferedReader(fr);
+            for (;;) {
+                String line = br.readLine();
+                if (line == null) {
+                    break;
                 }
-            } finally {
-                fr.close();
+                if (line.startsWith(MANIFEST_BUNDLE_LINK)) {
+                    String pack = line.substring(MANIFEST_BUNDLE_LINK.length()).trim().replace("/", File.separator);
+                    int index = pack.lastIndexOf(File.separator);
+                    if (index >= 0) {
+                        pack = pack.substring(0, index);
+                    }
+                    return pack;
+                }
             }
+            return null;
+        } finally {
+            fr.close();
         }
-        return null;
     }
 
     /** Return path to module's layer file
      */
     private String findModuleLayer() throws IOException {
-        File manifest = new File(rootDir, MANIFEST_FILE);
-        if (manifest.exists() && manifest.isFile()) {
+        File manifest = findManifest();
+        if (manifest != null) {
             FileReader fr = new FileReader(manifest);
             try {
                 BufferedReader br = new BufferedReader(fr);
@@ -187,68 +208,73 @@ public class ModuleScanner {
                 fr.close();
             }
         }
+
         return null;
     }
 
     private void scanFiles(FileType type) throws IOException {
+        if (!sourceRoot.exists() || !sourceRoot.isDirectory()) {
+            return;
+        }
+        
         DirectoryScanner ds = new DirectoryScanner();
         ds.setCaseSensitive(true);
-        ds.setBasedir(new File(rootDir, SRC_DIR));
+        ds.setBasedir(sourceRoot);
         ds.setIncludes(type.getFilter());
         ds.scan();
         String[] files = ds.getIncludedFiles();
-        for (String name: files) {
-            String[] splitName = splitPackage(name);
-            getPackage(splitName[0]).addFile(type, splitName[1]);
+        for (String file : files) {
+            String[] splitName = splitPathAndFileName(file);
+            getPackageScanner(splitName[0]).addFile(type, splitName[1]);
         }
     }
 
-    private PackageScanner getPackage(String pack) throws IOException {
-        PackageScanner ps = packages.get(pack);
+    private PackageScanner getPackageScanner(String packagePath) throws IOException {
+        PackageScanner ps = packages.get(packagePath);
         if (ps == null) {
-            String moduleDirName = rootDir.getCanonicalPath() + File.separator + SRC_DIR + File.separator;
-            ps = new PackageScanner(new File(rootDir + File.separator + SRC_DIR + File.separator + pack), moduleDirName);
-            packages.put(pack, ps);
+            ps = new PackageScanner(new File(sourceRoot, packagePath), sourceRoot.getAbsolutePath());
+            packages.put(packagePath, ps);
         }
         return ps;
     }
 
-    private static String[] splitPackage(String file) {
-        String[] ret = { "", file };
+    private static String[] splitPathAndFileName(String file) {
         int index = file.lastIndexOf(File.separator);
         if (index >= 0) {
-            ret[0] = file.substring(0, index);
-            ret[1] = file.substring(index + 1);
-        }
-        return ret;
-    }
-
-    /** Compute from e.g. "C:\Projects\MyProject\Work\trunk\repo\modules\WorkBenchProject" => "modules/WorkBenchProject" string.
-     */
-    public String getModuleSimpleName() throws IOException {
-        return simpleName;
-    }
-
-    private static String createSimpleName(File rootDir) throws IOException {
-        String name = rootDir.getCanonicalPath();
-        name = name.replace(File.separator, "/");
-        while (name.indexOf("/") < name.lastIndexOf("/")) {
-            name = name.substring(name.indexOf("/") + 1);
-        }
-        return name;
-    }
-
-    public void bundle2csv(String language, List<String> exportTo) throws IOException {
-        String moduleSimpleName = getModuleSimpleName();
-        for (PackageScanner ps: packages.values()) {
-            ps.bundle2csv(language, exportTo, moduleSimpleName);
+            return new String[] {
+                file.substring(0, index),
+                file.substring(index + 1)
+            };
+        } else {
+            return new String[]{"", file};
         }
     }
 
-    public void csv2bundle(String language, List<String> header, Map<String, Map<String, String>> translatedModule) throws IOException {
-        for (PackageScanner ps: packages.values()) {
+    public File getRoot() {
+        return root;
+    }
+
+//    private static String createSimpleName(File f) throws IOException {
+//        String name = f.getCanonicalPath();
+//        name = name.replace(File.separator, "/");
+//        while (name.indexOf("/") < name.lastIndexOf("/")) {
+//            name = name.substring(name.indexOf("/") + 1);
+//        }
+//        return name;
+//    }
+
+    public void bundle2csv(String language, List<String> exportTo, String relativePath) throws IOException {
+        for (PackageScanner ps : packages.values()) {
+            ps.bundle2csv(language, exportTo, relativePath);
+        }
+    }
+
+    public void csv2bundle(
+        String language, List<String> header, Map<String, Map<String, String>> translatedModule
+    ) throws IOException {
+        for (PackageScanner ps : packages.values()) {
             String packName = ps.getSimpleName();
-            Map<String,String> translatedPackage = translatedModule.get(packName);
+            Map<String, String> translatedPackage = translatedModule.get(packName);
             if (translatedPackage != null) {
                 ps.csv2bundle(language, header, translatedPackage);
             }
