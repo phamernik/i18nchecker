@@ -18,6 +18,7 @@ package org.i18nchecker.impl;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import org.i18nchecker.I18NTest;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -34,7 +35,7 @@ public class LayerParserTest {
     public void testParse() {
         InputStream is = LayerParserTest.class.getResourceAsStream("layer.xml");
         ArrayList<LayerParser.LayerData> results = new ArrayList<LayerParser.LayerData>();
-        for (LayerParser.LayerData entry : new LayerParser().parse(is)) {
+        for (LayerParser.LayerData entry : new LayerParser().parse(is, I18NTest.createEntityResolver())) {
             results.add(entry);
         }
         LayerParser.LayerData entry = new LayerParser.LayerData(

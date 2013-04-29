@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.tools.ant.DirectoryScanner;
 import org.i18nchecker.impl.LayerParser.LayerData;
+import org.xml.sax.EntityResolver;
 
 /**
  * Scanner for a single module strings.
@@ -42,12 +43,17 @@ public class ModuleScanner {
     private Map<String, PackageScanner> packages;
     private ScanResults results;
     private String simpleName;
+    private EntityResolver resolver;
 
     public ModuleScanner(File rootDir) throws IOException {
         this.rootDir = rootDir;
         this.packages = new TreeMap<String, PackageScanner>();
         this.results = new ScanResults(rootDir.toString());
         this.simpleName = createSimpleName(rootDir);
+    }
+
+    public void setXMLCatalogResolver(EntityResolver resolver) {
+        this.resolver = resolver;
     }
 
     /** Scan module, verify I18N and collects results */
@@ -96,8 +102,7 @@ public class ModuleScanner {
                     "Missing layer file specified in manifest " + moduleLayerFile);
             return;
         }
-        Iterable<LayerData> layerEntries = new LayerParser().parse(
-                new FileInputStream(layerFile));
+        Iterable<LayerData> layerEntries = new LayerParser().parse(new FileInputStream(layerFile), resolver);
         for (LayerData layerEntry : layerEntries) {
             boolean found = false;
             for (String p: packages.keySet()) {

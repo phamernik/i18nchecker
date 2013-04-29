@@ -12,6 +12,7 @@
 
 package org.i18nchecker;
 
+import com.sun.org.apache.xerces.internal.util.XMLCatalogResolver;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import junit.framework.TestCase;
+import org.xml.sax.EntityResolver;
 
 /**
  * Unit test for keeping project sources/resource bundles clean and fully localized.
@@ -43,13 +45,24 @@ public class I18NTest extends TestCase {
             "/lib/antlr-runtime-3.2.jar",
             "/lib/SuperCSV-1.52.jar" }));
         Class<?> c = loader.loadClass("org.i18nchecker.I18nChecker");
-        Method runAsTestMethod = c.getMethod("runAsTest", File.class, String.class, Map.class);
+        Method runAsTestMethod = c.getMethod("runAsTest", File.class, String.class, Map.class, EntityResolver.class);
+
+        EntityResolver resolver = createEntityResolver();
 
         Map<String,Integer> unfinishedModules = getUnfinishedI18NModules();
-        String result = (String) runAsTestMethod.invoke(null, rootDir, "i18nchecker/playground,i18nchecker/playground/PaintApp", unfinishedModules);
+        String result = (String) runAsTestMethod.invoke(null, rootDir, "i18nchecker/playground,i18nchecker/playground/PaintApp", unfinishedModules, resolver);
         if (!result.isEmpty()) {
             fail(result);
         }
+    }
+
+    public static EntityResolver createEntityResolver() {
+        URL resource = I18NTest.class.getResource("i18n_catalog.xml");
+        String [] catalogs = { resource.toString() };
+        XMLCatalogResolver resolver = new XMLCatalogResolver();
+        resolver.setPreferPublic(true);
+        resolver.setCatalogList(catalogs);
+        return resolver;
     }
 
     private URL[] urlToLibs(File suiteDir, String[] paths) throws Exception {

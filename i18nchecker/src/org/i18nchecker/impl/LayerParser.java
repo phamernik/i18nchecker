@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -33,6 +34,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
 
 /**
  * Simple parser to find localizable entries in NetBeans XML layer file.
@@ -102,9 +104,13 @@ public class LayerParser {
     public LayerParser() {
     }
 
-    public Iterable<LayerData> parse(InputStream is) {
+    public Iterable<LayerData> parse(InputStream is, EntityResolver resolver) {
         try {
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
+            DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            if (resolver != null) {
+                docBuilder.setEntityResolver(resolver);
+            }
+            Document doc = docBuilder.parse(is);
             XPath xpath = XPathFactory.newInstance().newXPath();
 
             XPathExpression expr = xpath.compile("//@bundlevalue");

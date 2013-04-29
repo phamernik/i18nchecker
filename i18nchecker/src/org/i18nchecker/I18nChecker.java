@@ -16,6 +16,7 @@
 
 package org.i18nchecker;
 
+import com.sun.org.apache.xerces.internal.util.XMLCatalogResolver;
 import org.i18nchecker.impl.I18NUtils;
 import org.i18nchecker.impl.ModuleScanner;
 import org.i18nchecker.impl.TranslatedData;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
+import org.xml.sax.EntityResolver;
 
 /**
  * I18N tool class for verifying strings in Java sources and resource bundles.
@@ -58,6 +60,8 @@ public class I18nChecker extends Task {
     private String language;
     private File exportToFile;
     private File importFromFile;
+
+    private EntityResolver resolver;
 
     private String moduleFilter;
 
@@ -97,17 +101,25 @@ public class I18nChecker extends Task {
         this.moduleFilter = moduleFilter;
     }
 
+    public void setXmlCatalog(File xmlCatalog) {
+        String [] catalogs = { xmlCatalog.toURI().toString() };
+        XMLCatalogResolver xmlR = new XMLCatalogResolver();
+        xmlR.setPreferPublic(true);
+        xmlR.setCatalogList(catalogs);
+        resolver = xmlR;
+    }
+
     @Override
     public void execute() throws BuildException {
         System.out.println("Scanning modules...\n");
         try {
             if (language == null) {
-                printErrors(rootDir, topDirsToScan, moduleFilter);
+                printErrors(rootDir, topDirsToScan, moduleFilter, resolver);
             } else {
                 if (exportToFile != null) {
-                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter);
+                    exportToFile(rootDir, topDirsToScan, language, exportToFile, moduleFilter, resolver);
                 } else if (importFromFile != null) {
-                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter);
+                    applyTranslation(rootDir, topDirsToScan, language, importFromFile, moduleFilter, resolver);
                 }
             }
         } catch (IOException exc) {
@@ -116,10 +128,15 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 1 - print all I18N errors to console */
-    private static void printErrors(File rootDir, List<String> topDirsToScan, String moduleFilter) throws IOException {
+    private static void printErrors(
+            File rootDir,
+            List<String> topDirsToScan,
+            String moduleFilter,
+            EntityResolver resolver) throws IOException {
+
         StringBuilder summary = new StringBuilder();
         int total = 0;
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, resolver);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan();
             moduleScanner.printResults(true);
@@ -135,10 +152,17 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 2 - prepare CSV for translation */
-    private static void exportToFile(File rootDir, List<String> topDirsToScan, String language, File exportToFile, String moduleFilter) throws IOException {
+    private static void exportToFile(
+            File rootDir,
+            List<String> topDirsToScan,
+            String language,
+            File exportToFile,
+            String moduleFilter,
+            EntityResolver resolver) throws IOException {
+
         List<String> exportedStrings = new LinkedList<String>();
         exportedStrings.add(TranslatedData.getCSVFileHeader());
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, resolver);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan();
             moduleScanner.printResults(false);
@@ -149,10 +173,16 @@ public class I18nChecker extends Task {
     }
 
     /** Mode 3 - use translation from CSV and apply it into appropriate resource bundle files */
-    private static void applyTranslation(File rootDir, List<String> topDirsToScan, String language, File importFromFile, String moduleFilter) throws IOException {
+    private static void applyTranslation(
+            File rootDir,
+            List<String> topDirsToScan,
+            String language,
+            File importFromFile,
+            String moduleFilter,
+            EntityResolver resolver) throws IOException {
         TranslatedData translatedData = new TranslatedData(importFromFile);
         List<String> header = I18NUtils.createTranslationFilesHeader(I18nChecker.class.getName(), rootDir, importFromFile);
-        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter);
+        List<ModuleScanner> modules = getModules(rootDir, topDirsToScan, moduleFilter, resolver);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan();
             Map<String, Map<String,String>> translatedModule = translatedData.getTranslationsForModule(moduleScanner.getModuleSimpleName());
@@ -169,11 +199,17 @@ public class I18nChecker extends Task {
      * @param rootDir root directory of repository
      * @param topDirs comma separated top level directories containing modules (e.g. "modules,libraries")
      * @param unfinishedModules contains map with counts of known problems in each module. Module names are in form e.g. "libraries/Jchem" or "modules/DIF_API", etc.
+     * @param resolver Entity resolver for parsing XML layer. Can be null.
      * @throws IOException
      */
-    public static String runAsTest(File rootDir, String topDirs, Map<String,Integer> unfinishedModules) throws IOException {
+    public static String runAsTest(
+            File rootDir,
+            String topDirs,
+            Map<String,Integer> unfinishedModules,
+            EntityResolver resolver) throws IOException {
+
         StringBuilder result = new StringBuilder();
-        List<ModuleScanner> modules = getModules(rootDir, Arrays.asList(topDirs.split(",")), null);
+        List<ModuleScanner> modules = getModules(rootDir, Arrays.asList(topDirs.split(",")), null, resolver);
         for (ModuleScanner moduleScanner: modules) {
             moduleScanner.scan();
             String moduleSimpleName = moduleScanner.getModuleSimpleName();
@@ -193,7 +229,8 @@ public class I18nChecker extends Task {
      * @param topLevelDirs Dirs like "modules", "libraries", "commons", etc. to be scanned
      * @return
      */
-    private static List<ModuleScanner> getModules(File root, List<String> topLevelDirs, String filter) throws IOException {
+    private static List<ModuleScanner> getModules(File root, List<String> topLevelDirs, String filter,
+            EntityResolver resolver) throws IOException {
         List<ModuleScanner> modules = new ArrayList<ModuleScanner>();
         for (String name: topLevelDirs) {
             File topLevelDir = new File(root, name);
@@ -206,6 +243,7 @@ public class I18nChecker extends Task {
                     File srcDir = new File(f, ModuleScanner.SRC_DIR);
                     if (srcDir.exists() && srcDir.isDirectory()) {
                         ModuleScanner module = new ModuleScanner(f);
+                        module.setXMLCatalogResolver(resolver);
                         if ((filter != null) && (filter.length() > 0)) {
                             if (!module.getModuleSimpleName().contains(filter)) {
                                 continue;
