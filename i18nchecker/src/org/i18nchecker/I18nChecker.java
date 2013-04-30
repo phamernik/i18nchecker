@@ -257,12 +257,20 @@ public final class I18nChecker extends Task {
 
             for (File f : topDir.listFiles()) {
                 if (moduleFilter != null && moduleFilter.length() > 0 && !f.getName().contains(moduleFilter)) {
+                    System.out.println("Filtered out: " + f.getCanonicalPath());
+                    continue;
+                }
+                if (f.isFile()) {
                     continue;
                 }
                 if (isNbmManifest(new File(f, "manifest.mf"))) {
                     scanners.add(new ModuleScanner(f, true, resolver));
                 } else if (isMavenProject(new File(f, "pom.xml"))) {
                     scanners.add(new ModuleScanner(new File(f, "/src/main/java"), false, resolver));
+                } else if (new File(f, "src").exists()) {
+                    scanners.add(new ModuleScanner(new File(f, "src"), false, resolver));
+                } else {
+                    System.out.println("Can't auto-detect sources, ignoring: " + f.getCanonicalPath());
                 }
             }
         }
