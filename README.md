@@ -87,4 +87,4 @@ See also [Geertjan's blog post][1] about this tool. You can find more details th
 
 Contact me if you have any comments: petr (dot) hamernik (at) gmail (dot) com
 
-[1]: http://blogs.sun.com/geertjan/entry/i18nchecker
+[1]: https://blogs.oracle.com/geertjan/entry/i18nchecker
